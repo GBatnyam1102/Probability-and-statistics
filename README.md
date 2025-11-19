@@ -13,6 +13,7 @@
 6.matplotlib - 2D болон 3D график зурж дүрслэх. _**(pip install matplotlib)**_
                     - cm – colormap буюу өнгөний схем сонгоход ашиглагддаг
                     - mpl_toolkits.mplot3d – 3D график хийхэд хэрэгтэй.
+
 7.seaborn - Статистик график, визуализацийг энгийн, гоё харагдуулах. Matplotlib дээр суурилдаг. _**(pip install seaborn)**_
 8.plotly - Интерктив график, диаграмм үүсгэх. Streamlit-д хялбар оруулах боломжтой. _**(pip install plotly)**_
 
