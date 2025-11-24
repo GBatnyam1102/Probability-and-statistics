@@ -1,0 +1,122 @@
+---
+title: "Twitter өгөгдөлд суурилсан сэтгэл хөдлөлийг тодорхойлох нь"
+subtitle: "Машин сургалтын төсөл"
+abstract: Энэхүү төслийн ажлын хүрээнд нийгмийн сүлжээний Sentiment140 өгөгдлийн санд машин сургалтын арга зүйг ашиглан хэрэглэгчдийн сэтгэл хөдлөлийг эерэг эсвэл сөрөг гэж ангилах загварыг хөгжүүлэв. Судалгаанд Python хэлний Scikit-learn санг ашиглан өгөгдлийг цэвэрлэж, CountVectorizer болон TF-IDF аргуудаар текстэн өгөгдлийг тоон хэлбэрт шилжүүлсэн. Сэтгэл хөдлөлийг таамаглахын тулд Мультиномиал Наив Байес (Multinomial Naive Bayes) болон Ложистик Регресс (Logistic Regression) алгоритмуудыг харьцуулан сургав. Үр дүнг Streamlit дээрх интерактив самбар (dashboard) ашиглан магадлалын тархалт болон төөрөгдлийн матрицаар дүрслэн харуулав. Туршилтын үр дүнд Ложистик Регресс/Мультиномиал Наив Байес загвар нь [X]%-ийн нарийвчлалтайгаар хамгийн өндөр үр дүнг үзүүлсэн байна.
+author: "1"
+date: 2025-11-22
+date-format: "YYYY оны M-р сарын D"
+project:
+  execute-dir: project
+  preview: false
+toc: true
+toc-depth: 3
+toc-title: Агуулга
+number-sections: true
+format:
+  pdf:
+    echo: true
+    pdf-engine: xelatex
+    papersize: a4paper
+    geometry:
+      - left=2cm
+      - right=2cm
+      - top=2cm
+      - bottom=3cm
+    include-in-header:
+      - text: |
+          \usepackage[english,mongolian]{babel}
+          \usepackage{fontspec}
+          % үндсэн текстийн шрифт
+          \setmainfont{Times New Roman}
+          % код хэсгийн шрифт
+          \setmonofont{DejaVu Sans Mono}
+          \AddToHook{env/Highlighting/begin}{\footnotesize}
+          % үндсэн гарчиг
+          \usepackage{titling}
+          \pretitle{\begin{center}\LARGE\bfseries}
+          \posttitle{\par\end{center}\vskip 1em}
+          % сэдвийн зүйлчлэл хэсгийн шрифт
+          \usepackage{titlesec}
+          \titleformat{\section}{\normalfont\Large\bfseries\selectfont}{\thesection}{1em}{}
+          \titleformat{\subsection}{\normalfont\large\bfseries\selectfont}{\thesubsection}{1em}{}
+          \titleformat{\subsubsection}{\normalfont\normalsize\bfseries\selectfont}{\thesubsubsection}{1em}{}
+          % сэдвийн жагсаалт доторх шрифт
+          \usepackage{tocloft}
+          \renewcommand{\cfttoctitlefont}{\Large\bfseries\fontspec{Times New Roman}}
+          \renewcommand{\cftaftertoctitle}{\vskip 1em}
+          \renewcommand{\cftsecfont}{\normalfont\selectfont}
+          \renewcommand{\cftsecpagefont}{\normalfont\selectfont}
+          \renewcommand{\cftsubsecfont}{\normalfont\selectfont}
+          \renewcommand{\cftsubsecpagefont}{\normalfont\selectfont}
+          \renewcommand{\contentsname}{Агуулга}
+    latex-max-runs: 3
+editor: source
+execute:
+  echo: false
+crossref: 
+  fig-title: Зураг
+  fig-prefix: Зураг
+  tbl-title: Хүснэгт
+  tbl-prefix: Хүснэгт
+fig-align: center
+fig-env: "figure"
+fig-height: 4
+fig-width: 6
+fig-pos: "!ht"
+fig-format: pdf
+fig-cap-location: top
+tbl-cap-location: top
+bibliography: references.bib
+csl: ieee.csl
+citeproc: true
+link-citations: true
+---
+
+```{python}
+#| echo: false
+import pandas as pd
+import numpy as np
+import re
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+# Дүгнэлт хадгалах жагсаалт
+conclusion = list()
+```
+
+
+# Шаардлагатай багцууд {-}
+Шаардлагатай багцуудыг дараах байдлаар урьдчилан суулгана.
+
+`pip install streamlit pandas numpy scikit-learn matplotlib seaborn plotly`
+
+# Өгөгдөл
+Энэхүү судалгааны ажилд бид нийгмийн сүлжээний сэтгэл хөдлөлийг шинжлэхэд өргөн хэрэглэгддэг Sentiment140 @sentiment140 өгөгдлийн санг ашиглав. Тус өгөгдлийн сан нь Twitter (одоогийн X) сүлжээнээс цуглуулсан жиргээнүүдээс бүрдэх бөгөөд хэрэглэгчийн сэтгэл хөдлөлийг "Эерэг" (Positive) болон "Сөрөг" (Negative) гэж урьдчилан ангилсан байдаг.
+
+## Өгөгдлийн түүвэрлэлт ба Боловсруулалт
+Sentiment140 өгөгдлийн сан нь нийт 1.6 сая мөр бүхий их хэмжээний өгөгдлийг агуулдаг. Энэхүү төслийн хүрээнд тооцооллын нөөц болон хугацааг хэмнэх зорилгоор бид "Санамсаргүй түүвэрлэлт" (Simple Random Sampling)-ийн аргыг ашиглав. Бид Python хэлний sample() функцийг ашиглан нийт өгөгдлөөс 50,000 жиргээг санамсаргүй байдлаар сонгон авч сургалтад ашигласан. Туршилтын үр дүн дахин давтагдах (reproducible) боломжтой байхын тулд random_state=42 тохиргоог ашигласан болно.
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Бүтэн өгөгдлийг унших (1.6 сая мөр)
+df_full = pd.read_csv("training.1600000.processed.noemoticon.csv",
+                      encoding="latin-1", header=None)
+
+# 50,000 мөрийг санамсаргүйгээр түүвэрлэх (Seed = 42)
+df_sample = df_full.sample(n=50000, random_state=42)
+```
+
+# Дүгнэлт {.unnumbered}
+
+# Ашигласан материал {.unnumbered}
+
+::: {#refs}
+:::
