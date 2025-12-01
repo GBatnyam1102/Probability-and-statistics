@@ -57,7 +57,7 @@ def prepare_df(df):
         st.error("CSV нь Twitter dataset хэлбэртэй байх ёстой.")   # Алдаатай файл шалгах
         return None
     if set(df["target"].unique()) == {0,4}:                        # 0=negative, 4=positive
-        df["target"] = df["target"].map({0:0, 4:1})                # үнэн худал гэсэн утгуудыг 4 → 1 0 -> 0 болгон map хийх
+        df["target"] = df["target"].map({0:0, 4:1})                # эерэг сөрөг гэсэн утгуудыг 4 → 1 0 -> 0 болгон map хийх
     df["clean_text"] = df["text"].astype(str).apply(clean_tweet)  # Текстийг цэвэрлэж шинэ баганад хийх
     return df
 
@@ -116,22 +116,22 @@ if uploaded_file:
             )
 
             st.subheader("Training Models...")
-            models = build_pipelines()                           # 2 ML model
+            models = build_pipelines()                           # 2 model dictionary үүсгэнэ
             results = {}                                         # Үр дүн хадгалах dict
             bar = st.progress(0)                                 # Progress bar
 
             # Загваруудыг сургаж, үнэлгээ авах
             for i, (name, model) in enumerate(models.items(), start=1):
-                model.fit(X_train, y_train)                      # Загварыг сургах алгоритм хэрэгжүүлэлт
-                results[name] = evaluate(model, X_test, y_test)  # Үнэлгээ хийх
+                model.fit(X_train, y_train)                      # Загварыг сургах алгоритм хэрэгжүүлэлт эхлээд NB дараа нь LR  
+                results[name] = evaluate(model, X_test, y_test)  # Үнэлгээ хийх 2 model тус тусдаа prediction + posterior + metric үүсгэнэ
                 bar.progress(int(i/len(models)*100))             # Прогресс %
 
             st.success("Training Done!")  # Загвар сургалт бүрэн дууссаныг Streamlit дээр ногоон нотолгоогоор харуулна.
 
 
             # Сургасан загваруудын үр дүнг харуулах
-            st.subheader("📌 Model Metrics Overview")  #Хоёр ангилагчийн (NB, LR) гол үзүүлэлтүүдийг харуулах гарчиг
-            for name, r in results.items():            #results dict доторх бүх моделиудын нэр (name) болон үр дүн (r)-г давталтаар авах
+            st.subheader("📌 Model Metrics Overview")  #Хоёр алгоритмын (NB, LR) гол үзүүлэлтүүдийг харуулах гарчиг
+            for name, r in results.items():            #results dict доторх бүх моделиудын нэр (name) болон үр дүн (r)-г давталтаар аван тусад нь харуулна
                 st.markdown(f"### {name}", unsafe_allow_html=True)   # Загварын нэрийг том гарчиг болгон хэвлэх
 
                 # 4 үзүүлэлтүүдийг багана болгож харуулах
